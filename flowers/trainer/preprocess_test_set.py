@@ -44,7 +44,6 @@ To run this pipeline locally run the above command without --cloud.
 TODO(b/31434218)
 """
 import argparse
-import csv
 import datetime
 import io
 import logging
@@ -54,6 +53,7 @@ import sys
 
 import apache_beam as beam
 from apache_beam.metrics import Metrics
+
 try:
   from apache_beam.utils.pipeline_options import PipelineOptions
 except ImportError:
@@ -310,7 +310,7 @@ def configure_pipeline(p, opt):
       opt.input_path, strip_trailing_newlines=True)
   _ = (p
        | 'Read input' >> read_input_source
-       | 'Parse input' >> beam.Map(lambda line: csv.reader([line]).next())
+       # | 'Parse input' >> beam.Map(lambda line: csv.reader([line]).next())
        | 'Read and convert to JPEG'
        >> beam.ParDo(ReadImageAndConvertToJpegDoFn())
        | 'Embed and make TFExample' >> beam.ParDo(TFExampleFromImageDoFn())
