@@ -19,24 +19,21 @@
 
 # Now that we are set up, we can start processing some flowers images.
 declare -r PROJECT=fishing-160312
-declare -r JOB_ID="fish_train_${USER}_$(date +%Y%m%d_%H%M%S)"
+declare -r JOB_ID="fish_preprocess_test_${USER}_$(date +%Y%m%d_%H%M%S)"
 declare -r BUCKET="gs://fish_bucket"
 declare -r GCS_PATH="${BUCKET}/${USER}/fish_phuhem_20170302_222624"
-declare -r DICT_FILE=gs://fish_bucket/dict.txt
 
 echo
 echo "Using job id: " $JOB_ID
 set -v -e
 
-# Training on CloudML is quick after preprocessing.  If you ran the above
-# commands asynchronously, make sure they have completed before calling this one.
-gcloud beta ml jobs submit training "$JOB_ID" \
-  --module-name trainer.task \
-  --package-path trainer \
-  --staging-bucket "$BUCKET" \
-  --region us-central1 \
-  -- \
-  --output_path "${GCS_PATH}/training" \
-  --eval_data_paths "${GCS_PATH}/preproc/train-0008*" \
-  --train_data_paths "${GCS_PATH}/preproc/train-000[0-7]*"
-  --label_count=8
+# Takes about 30 mins to preprocess everything.  We serialize the two
+# preprocess.py synchronous calls just for shell scripting ease; you could use
+# --runner DataflowRunner to run them asynchronously.  Typically,
+# the total worker time is higher when running on Cloud instead of your local
+# machine due to increased network traffic and the use of more cost efficient
+# CPU's.  Check progress here: https://console.cloud.google.com/dataflow
+python trainer/preprocess_test_set.py \
+  --input_path "${BUCKET}/test_files.csv" \
+  --output_path "${GCS_PATH}/preproc/test" \
+  --cloud

@@ -19,13 +19,10 @@
 
 # Now that we are set up, we can start processing some flowers images.
 declare -r PROJECT=fishing-160312
-declare -r JOB_ID="fish_${USER}_$(date +%Y%m%d_%H%M%S)"
+declare -r JOB_ID="fish_preprocess_${USER}_$(date +%Y%m%d_%H%M%S)"
 declare -r BUCKET="gs://fish_bucket"
 declare -r GCS_PATH="${BUCKET}/${USER}/${JOB_ID}"
 declare -r DICT_FILE=gs://fish_bucket/dict.txt
-
-declare -r MODEL_NAME=fish
-declare -r VERSION_NAME=v1
 
 echo
 echo "Using job id: " $JOB_ID
