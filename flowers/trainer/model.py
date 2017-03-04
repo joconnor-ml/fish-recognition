@@ -49,7 +49,7 @@ def create_model():
   parser = argparse.ArgumentParser()
   # Label count needs to correspond to nubmer of labels in dictionary used
   # during preprocessing.
-  parser.add_argument('--label_count', type=int, default=5)
+  parser.add_argument('--label_count', type=int, default=8)
   parser.add_argument('--dropout', type=float, default=0.5)
   parser.add_argument(
       '--inception_checkpoint_file',
@@ -240,9 +240,7 @@ class Model(object):
         uris = tf.squeeze(parsed['image_uri'])
         embeddings = parsed['embedding']
 
-    # We assume a default label, so the total number of labels is equal to
-    # label_count+1.
-    all_labels_count = self.label_count + 1
+    all_labels_count = self.label_count
     with tf.name_scope('final_ops'):
       softmax, logits = self.add_final_training_ops(
           embeddings,
