@@ -310,7 +310,7 @@ def configure_pipeline(p, opt):
       opt.input_path, strip_trailing_newlines=True)
   _ = (p
        | 'Read input' >> read_input_source
-       # | 'Parse input' >> beam.Map(lambda line: csv.reader([line]).next())
+       | 'Parse input' >> beam.Map(lambda line: csv.reader([line]).next())
        | 'Read and convert to JPEG'
        >> beam.ParDo(ReadImageAndConvertToJpegDoFn())
        | 'Embed and make TFExample' >> beam.ParDo(TFExampleFromImageDoFn())
