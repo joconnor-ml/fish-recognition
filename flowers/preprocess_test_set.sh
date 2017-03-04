@@ -35,5 +35,4 @@ set -v -e
 # CPU's.  Check progress here: https://console.cloud.google.com/dataflow
 python trainer/preprocess_test_set.py \
   --input_path "${BUCKET}/test_files.csv" \
-  --output_path "${GCS_PATH}/preproc/test" \
-  --cloud
+  --output_path "${GCS_PATH}/preproc/test"
