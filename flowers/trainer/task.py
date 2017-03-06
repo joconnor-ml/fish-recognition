@@ -135,8 +135,8 @@ class Evaluator(object):
 
           res = session.run(to_run)
           for element in range(len(res[0])):
-              f.write('%s,' % res[3][element])
-              f.write(','.join(res[1][element]))
+            f.write('%s,' % res[3][element])
+            f.write(','.join(res[1][element]))
             f.write('\n')
 
 
