@@ -208,18 +208,18 @@ class Model(object):
     else:
       tensors.examples = tf.placeholder(tf.string, name='input', shape=(None,))
 
-    if graph_mod == GraphMod.PREDICT:
-      inception_input, inception_embeddings = self.build_inception_graph()
+      # if graph_mod == GraphMod.PREDICT:
+      #  inception_input, inception_embeddings = self.build_inception_graph()
       # Build the Inception graph. We later add final training layers
       # to this graph. This is currently used only for prediction.
       # For training, we use pre-processed data, so it is not needed.
-      embeddings = inception_embeddings
-      tensors.input_jpeg = inception_input
-    else:
-      # For training and evaluation we assume data is preprocessed, so the
-      # inputs are tf-examples.
-      # Generate placeholders for examples.
-      with tf.name_scope('inputs'):
+    #  embeddings = inception_embeddings
+    #  tensors.input_jpeg = inception_input
+    # else:
+    # For training and evaluation we assume data is preprocessed, so the
+    # inputs are tf-examples.
+    # Generate placeholders for examples.
+    with tf.name_scope('inputs'):
         feature_map = {
             'image_uri':
                 tf.FixedLenFeature(
