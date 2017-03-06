@@ -134,10 +134,11 @@ class Evaluator(object):
 
 
           res = session.run(to_run)
-          logging.info(res)
+          logging.info(res[1])
+          logging.info(res[1][0])
           for element in range(len(res[0])):
             f.write('%s,' % res[3][element])
-            f.write(','.join(res[1][element]))
+            f.write(','.join(e for e in res[1][element]))
             f.write('\n')
 
 
