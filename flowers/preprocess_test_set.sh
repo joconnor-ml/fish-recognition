@@ -22,6 +22,7 @@ declare -r PROJECT=fishing-160312
 declare -r JOB_ID="fish_preprocess_test_${USER}_$(date +%Y%m%d_%H%M%S)"
 declare -r BUCKET="gs://fish_bucket"
 declare -r GCS_PATH="${BUCKET}/${USER}/fish_phuhem_20170302_222624"
+declare -r DICT_FILE=gs://fish_bucket/dict.txt
 
 echo
 echo "Using job id: " $JOB_ID
@@ -33,6 +34,8 @@ set -v -e
 # the total worker time is higher when running on Cloud instead of your local
 # machine due to increased network traffic and the use of more cost efficient
 # CPU's.  Check progress here: https://console.cloud.google.com/dataflow
-python trainer/preprocess_test_set.py \
+python trainer/preprocess.py \
+  --input_dict "$DICT_FILE" \
   --input_path "${BUCKET}/test_files.csv" \
-  --output_path "${GCS_PATH}/preproc/test"
+  --output_path "${GCS_PATH}/preproc/test" \
+  --cloud
