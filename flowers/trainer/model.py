@@ -251,7 +251,7 @@ class Model(object):
     # Prediction is the index of the label with the highest score. We are
     # interested only in the top score.
     prediction = tf.argmax(softmax, 1)
-    tensors.predictions = [prediction, softmax, embeddings]
+    tensors.predictions = [prediction, softmax, embeddings, uris]
 
     if graph_mod == GraphMod.PREDICT:
       return tensors

@@ -132,12 +132,11 @@ class Evaluator(object):
             logging.info('%3d%% predictions processed', progress)
             last_log_progress = progress
 
+
           res = session.run(to_run)
           for element in range(len(res[0])):
-            f.write('%s' % res[0][element])
-            for prediction in res[1:]:
-              f.write(',')
-              f.write(str(prediction[element]))
+              f.write('%s,' % res[3][element])
+              f.write(','.join(res[1][element]))
             f.write('\n')
 
 
