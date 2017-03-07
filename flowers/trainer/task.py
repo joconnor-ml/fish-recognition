@@ -137,8 +137,8 @@ class Evaluator(object):
           logging.info(res[2])
           logging.info(res[2][0])
           for element in range(len(res[0])):
-              f.write('%s,' % res[4][element])
-              f.write(','.join(e for e in res[2][element]))
+            f.write('%s,' % res[4][element])
+            f.write(','.join(e for e in res[2][element]))
             f.write('\n')
 
 
