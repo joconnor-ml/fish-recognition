@@ -39,4 +39,5 @@ gcloud beta ml jobs submit training "$JOB_ID" \
   --output_path "${GCS_PATH}/training" \
   --eval_data_paths "${GCS_PATH}/preproc/test*" \
   --label_count=8 \
-  --write_predictions
+  --write_predictions \
+  --batch_size=1000
