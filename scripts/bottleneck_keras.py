@@ -65,7 +65,7 @@ pt = []
 lls = []
 cv = GroupKFold(2)
 print("Group KFold")
-for i, (train, test) in enumerate(cv.split(X, y, clusters)):
+for i, (train, test) in enumerate(cv.split(X, groups=clusters)):
     print(i)
     model = get_model()
     model.fit(X[train, :], y[train, :], nb_epoch=10, validation_data=(X[test, :], y[test, :]))#, batch_size=32)
@@ -77,7 +77,7 @@ for i, (train, test) in enumerate(cv.split(X, y, clusters)):
 
 cv = StratifiedKFold(2)
 print("Stratified KFold")
-for i, (train, test) in enumerate(cv.split(X, y)):
+for i, (train, test) in enumerate(cv.split(X, y[:,0])):
     model = get_model()
     model.fit(X[train, :], y[train, :], nb_epoch=10, validation_data=(X[test, :], y[test, :]))#, batch_size=32)
     ll = log_loss(y[test], model.predict(X[test]))
