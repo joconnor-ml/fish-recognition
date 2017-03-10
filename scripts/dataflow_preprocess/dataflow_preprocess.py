@@ -127,7 +127,7 @@ def default_args(argv):
         'runner':
             'DataflowRunner',
         'extra_package':
-            'gs://cloud-ml/sdk/cloudml-0.1.9-alpha.tar.gz'
+            'gs://cloud-ml/sdk/cloudml-0.1.9-alpha.tar.gz',
         'save_main_session':
             True,
     }
