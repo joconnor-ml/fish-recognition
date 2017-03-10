@@ -54,13 +54,11 @@ class ProcessImages(beam.DoFn):
 
     
 class ComputeFeatures(beam.DoFn):
-  def __init__(self, size):
+  def process(self, element, vgg):
     import vgg16bn
     "Loads pre-built VGG model up to last convolutional layer"""
-    self.vgg = vgg16bn.Vgg16BN(include_top=False, size=size)
-
-  def process(self, element, vgg):
-    yield self.vgg.predict(np.expand_dims(element, axis=0))
+    vgg = vgg16bn.Vgg16BN(include_top=False, size=size)
+    yield vgg.predict(np.expand_dims(element, axis=0))
 
   
 #def save_features(data):
