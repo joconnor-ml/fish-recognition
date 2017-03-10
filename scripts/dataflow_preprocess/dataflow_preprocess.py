@@ -50,7 +50,7 @@ class ComputeFeatures(beam.DoFn):
     yield vgg.predict(np.expand_dims(element, axis=0))
 
   
-def run(in_args=None):
+def run(argv=None):
   """Runs the pre-processing pipeline."""
 
   parser = argparse.ArgumentParser()
