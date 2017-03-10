@@ -37,7 +37,7 @@ def configure_pipeline(p, opt):
   """Specify PCollection and transformations in pipeline."""
   read_input_source = beam.io.ReadFromText(
       opt.input_path, strip_trailing_newlines=True)
-   _ = (p
+  _ = (p
        | 'Read input' >> read_input_source
        | 'Process images' >> beam.ParDo(ProcessImages(), size=(opt.size_y, opt.size_x))
        | 'Compute features' >> beam.ParDo(ComputeFeatures(size=(opt.size_y, opt.size_x)))
@@ -127,7 +127,7 @@ def default_args(argv):
         'runner':
             'DataflowRunner',
         'extra_package':
-            Default.CML_PACKAGE,
+            'gs://cloud-ml/sdk/cloudml-0.1.9-alpha.tar.gz'
         'save_main_session':
             True,
     }
