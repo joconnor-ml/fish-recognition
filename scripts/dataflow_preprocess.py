@@ -32,7 +32,6 @@ except ImportError:
   from apache_beam.utils.options import PipelineOptions
 
 from google.cloud.ml.io import SaveFeatures
-from keras.preprocessing import image
 import vgg16bn
 
 def configure_pipeline(p, opt):
@@ -56,6 +55,7 @@ def build_vgg(size):
 
         
 class ProcessImages(beam.DoFn):
+  from keras.preprocessing import image
   def process(self, element, size):
     x = image.img_to_array(image.load_img(element, target_size=size))
     x = self.image_data_generator.random_transform(x)
