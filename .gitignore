@@ -2,6 +2,7 @@
 *#
 weights/
 data/
+.env/
 
 # Compiled source #
 ###################

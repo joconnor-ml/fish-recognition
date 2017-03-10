@@ -26,20 +26,33 @@ from keras.layers.convolutional import *
 from keras.preprocessing import image, sequence
 from keras.preprocessing.text import Tokenizer
 
+import utils
+
+np.random.seed(10)
+
 architecture = "vgg16"
 alb, bet, dol, lag, nof, oth, sha, yft = 1719, 200, 117, 67, 465, 299, 176, 734
 df = pd.read_csv("../data/train.bottleneck.{}.csv".format(architecture), index_col=0)
+df["target"] = np.array([0] * alb + [1] * bet + [2] * dol + [3] * lag + [4] * nof + [5] * oth + [6] * sha + [7] * yft)
+boxes = utils.read_boxes()
+df = df.join(boxes).fillna(0)
+df.to_csv("../data/train.bottleneck.{}.targets.csv.gz", compression="gzip")
+print(df.head())
 
-y = np.array([0] * alb + [1] * bet + [2] * dol + [3] * lag + [4] * nof + [5] * oth + [6] * sha + [7] * yft)
-X = df.copy().values
-X, y = shuffle(X, y)
+y=df["target"].values
+y_box = df[["height", "width", "x", "y"]].values
+X = df.drop(["height", "width", "x", "y", "target"], axis=1).values
+X, y, y_box = shuffle(X, y, y_box)
+
 y = to_categorical(y)
-print(y[0])
+
 
 X_pca = PCA(3).fit_transform(X)
-kmeans = KMeans(10)
+kmeans = KMeans(100)
 clusters = kmeans.fit(X_pca).predict(X_pca)
-# print(kmeans.score(X_pca))
+y_clust = to_categorical(clusters)
+print(y[0], y_box[0], y_clust[0])
+print(kmeans.score(X_pca))
 # print(clusters)
 
 dftest = pd.read_csv("../data/test.bottleneck.{}.csv".format(architecture), index_col=0)
@@ -47,47 +60,78 @@ dftest.head()
 
 def get_model():
     inp = Input(X.shape[1:])
-    x = Dense(512, activation='relu')(inp)
-    x = BatchNormalization()(x)
-    x = Dropout(0.4)(x)
+    x = Dropout(0.15)(inp)
     x = Dense(512, activation='relu')(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.2)(x)
-    #x_bb = Dense(4, name='bb')(x)
+    x = Dropout(0.6)(x)
+    x = Dense(512, activation='relu')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.3)(x)
+    x_box = Dense(4, name='bb')(x)
     x_class = Dense(8, activation='softmax', name='class')(x)
-    model = Model(input=inp, output=x_class)
-    model.compile(Adam(lr=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
+    model = Model(input=inp, output=[x_class, x_box])
+    model.compile(Adam(lr=0.001), loss=['categorical_crossentropy', 'mse'],
+                  metrics=['accuracy'], loss_weights=[1., 0.001])
+    return model
+
+def get_clust_model():
+    inp = Input(X.shape[1:])
+    x = Dropout(0.15)(inp)
+    x = Dense(512, activation='relu')(x)
+    x_clust = Dense(10, activation='softmax', name='clust')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.6)(x)
+    x = Dense(512, activation='relu')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.3)(x)
+    x_box = Dense(4, name='bb')(x)
+    x_class = Dense(8, activation='softmax', name='class')(x)
+    model = Model(input=inp, output=[x_class, x_box, x_clust])
+    model.compile(Adam(lr=0.0001), loss=['categorical_crossentropy', 'mse', 'categorical_crossentropy'],
+                  metrics=['accuracy'], loss_weights=[1., 0.001, 0.1])
     return model
 
 
 p = []
 pt = []
 lls = []
-cv = GroupKFold(2)
+cv = GroupKFold(3)
+
 print("Group KFold")
 for i, (train, test) in enumerate(cv.split(X, groups=clusters)):
     print(i)
     model = get_model()
-    model.fit(X[train, :], y[train, :], nb_epoch=10, validation_data=(X[test, :], y[test, :]))#, batch_size=32)
-    ll = log_loss(y[test], model.predict(X[test]))
+    model.fit(X[train, :], [y[train, :], y_box[train, :]], nb_epoch=20, validation_data=(X[test, :], [y[test, :], y_box[test, :]]), batch_size=128)
+    test_preds = model.predict(X[test])[0]
+    print(test_preds)
+    ll = log_loss(y[test], test_preds)
     print(ll)
-    p.append((y[test], model.predict(X[test])))
-    pt.append(model.predict(dftest.values))
+    #p.append((y[test], model.predict(X[test])[:, -1]))
+    pt.append(model.predict(dftest.values)[0])
     lls.append(ll)
 
-cv = StratifiedKFold(2)
+cv = StratifiedKFold(3)
 print("Stratified KFold")
 for i, (train, test) in enumerate(cv.split(X, y[:,0])):
+    print(i)
     model = get_model()
-    model.fit(X[train, :], y[train, :], nb_epoch=10, validation_data=(X[test, :], y[test, :]))#, batch_size=32)
-    ll = log_loss(y[test], model.predict(X[test]))
+    model.fit(X[train, :], [y[train, :], y_box[train, :]], nb_epoch=20, validation_data=(X[test, :], [y[test, :], y_box[test, :]]), batch_size=128)
+    test_preds = model.predict(X[test])[0]
+    print(test_preds)
+    ll = log_loss(y[test], test_preds)
     print(ll)
-    p.append((y[test], model.predict(X[test])))
-    pt.append(model.predict(dftest.values))
+    #p.append((y[test], model.predict(X[test])[:, -1]))
+    pt.append(model.predict(dftest.values)[0])
     lls.append(ll)
+
 
 print("Average")
 print(sum(lls)/len(lls))
+
+folders = ['ALB', 'BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK', 'YFT']
+test = pd.DataFrame(sum(pt) / len(pt), index=dftest.index, columns=folders)
+test.index.name = "image"
+test.to_csv("sub.csv.gz", compression="gzip")
 
 #model = Lasso(C=C).fit(X, y)
 #p = model.predict_proba(dftest.values)
