@@ -37,39 +37,36 @@ def configure_pipeline(p, opt):
   """Specify PCollection and transformations in pipeline."""
   read_input_source = beam.io.ReadFromText(
       opt.input_path, strip_trailing_newlines=True)
-  labels = (p | 'Read dictionary' >> read_input_source)
-  vgg = build_vgg(size=(opt.size_y, opt.size_x))
-  _ = (p
+   _ = (p
        | 'Read input' >> read_input_source
        | 'Process images' >> beam.ParDo(ProcessImages(), size=(opt.size_y, opt.size_x))
-       | 'Compute features' >> beam.ParDo(ComputeFeatures(),
-                                          vgg)
+       | 'Compute features' >> beam.ParDo(ComputeFeatures(size=(opt.size_y, opt.size_x)))
        #| 'save' >> beam.io.WriteToText('./test')) 
        | 'save' >> SaveFeatures(opt.output_path)) 
 
-
-def build_vgg(size):
-  import vgg16bn
-  "Loads pre-built VGG model up to last convolutional layer"""
-  return vgg16bn.Vgg16BN(include_top=False, size=size)
-
-        
+       
 class ProcessImages(beam.DoFn):
-  from keras.preprocessing import image
   def process(self, element, size):
+    from keras.preprocessing import image
     x = image.img_to_array(image.load_img(element, target_size=size))
     x = self.image_data_generator.random_transform(x)
     x = self.image_data_generator.standardize(x)
-                        
+
+    
 class ComputeFeatures(beam.DoFn):
+  def __init__(self, size):
+    import vgg16bn
+    "Loads pre-built VGG model up to last convolutional layer"""
+    self.vgg = vgg16bn.Vgg16BN(include_top=False, size=size)
+
   def process(self, element, vgg):
-    yield vgg.predict(np.expand_dims(element, axis=0))
+    yield self.vgg.predict(np.expand_dims(element, axis=0))
 
   
-def save_features(data):
-  import dl_utils
-  features = data
-  dl_utils.save_array("cnn_features.dat", features)
+#def save_features(data):
+#  import dl_utils
+#  features = data
+#  dl_utils.save_array("cnn_features.dat", features)
 
 
 def run(in_args=None):
