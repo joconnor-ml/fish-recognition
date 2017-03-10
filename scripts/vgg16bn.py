@@ -1,4 +1,4 @@
-fom __future__ import division, print_function
+from __future__ import division, print_function
 
 import os, json
 from glob import glob

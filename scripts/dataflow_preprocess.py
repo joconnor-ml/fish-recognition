@@ -20,6 +20,9 @@ import logging
 import os
 import subprocess
 import sys
+import numpy as np
+
+sys.setrecursionlimit(10000)
 
 import apache_beam as beam
 from apache_beam.metrics import Metrics
@@ -30,34 +33,37 @@ except ImportError:
 
 from google.cloud.ml.io import SaveFeatures
 from keras.preprocessing import image
-
+import vgg16bn
 
 def configure_pipeline(p, opt):
   """Specify PCollection and transformations in pipeline."""
   read_input_source = beam.io.ReadFromText(
       opt.input_path, strip_trailing_newlines=True)
-  labels = (p | 'Read dictionary' >> read_label_source)
-  vgg = build_vgg()
+  labels = (p | 'Read dictionary' >> read_input_source)
+  vgg = build_vgg(size=(opt.size_y, opt.size_x))
   _ = (p
        | 'Read input' >> read_input_source
-       | 'Process images' >> beam.ParDo(ProcessImages())
+       | 'Process images' >> beam.ParDo(ProcessImages(), size=(opt.size_y, opt.size_x))
        | 'Compute features' >> beam.ParDo(ComputeFeatures(),
                                           vgg)
-       | 'Save to disk' >> SaveFeatures(opt.output_path))
+       #| 'save' >> beam.io.WriteToText('./test')) 
+       | 'save' >> SaveFeatures(opt.output_path)) 
 
 
-def build_vgg()
+def build_vgg(size):
   "Loads pre-built VGG model up to last convolutional layer"""
-  return vgg16bn.Vgg16BN(include_top=False, size=op.target_size)
+  return vgg16bn.Vgg16BN(include_top=False, size=size)
 
         
 class ProcessImages(beam.DoFn):
-  def process(self, element):
-    return image.load_img(img_path, target_size=opt.target_size)
-
+  def process(self, element, size):
+    x = image.img_to_array(image.load_img(element, target_size=size))
+    x = self.image_data_generator.random_transform(x)
+    x = self.image_data_generator.standardize(x)
+                        
 class ComputeFeatures(beam.DoFn):
-  def process(self, element, vgg)
-    return vgg.predict(element)
+  def process(self, element, vgg):
+    yield vgg.predict(np.expand_dims(element, axis=0))
 
   
 def save_features(data):
