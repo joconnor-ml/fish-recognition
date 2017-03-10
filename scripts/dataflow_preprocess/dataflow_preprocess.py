@@ -154,5 +154,11 @@ def main(argv):
   run(arg_dict)
 
 
+def get_cloud_project():
+  cmd = ['gcloud', 'config', 'list', 'project', '--format=value(core.project)']
+  with open(os.devnull, 'w') as dev_null:
+    return subprocess.check_output(cmd, stderr=dev_null).strip()
+
+
 if __name__ == '__main__':
   main(sys.argv[1:])
