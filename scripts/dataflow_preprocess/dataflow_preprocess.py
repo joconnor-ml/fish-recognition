@@ -31,26 +31,57 @@ try:
 except ImportError:
   from apache_beam.utils.options import PipelineOptions
 
-#from google.cloud.ml.io import SaveFeatures
+from PIL import Image
 
-       
+from tensorflow.python.framework import errors
+from tensorflow.python.lib.io import file_io
+#from google.cloud.ml.io import SaveFeatures
+import json
+
 class ProcessImages(beam.DoFn):
   def process(self, element, size):
     from keras.preprocessing import image
-    import glob
-    for e in glob.glob("gs://fish_bucket/*"):
-      logging.warn(e)
-    x = image.img_to_array(image.load_img(str(element), target_size=size))
+    uri = element
+    # TF will enable 'rb' in future versions, but until then, 'r' is
+    # required.
+    def _open_file_read_binary(uri):
+      try:
+        return file_io.FileIO(uri, mode='rb')
+      except errors.InvalidArgumentError:
+        return file_io.FileIO(uri, mode='r')
+
+    try:
+      with _open_file_read_binary(uri) as f:
+        image_bytes = f.read()
+        img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+        img = img.resize((size[1], size[0]))
+                
+
+    # A variety of different calling libraries throw different exceptions here.
+    # They all correspond to an unreadable file so we treat them equivalently.
+    # pylint: disable broad-except
+    except Exception as e:
+      logging.exception('Error processing image %s: %s', uri, str(e))
+      return
+
+    fname = uri.split("/")[-1]
+    yield fname, image.img_to_array(img)
     #x = self.image_data_generator.random_transform(x)
     #x = self.image_data_generator.standardize(x)
 
     
 class ComputeFeatures(beam.DoFn):
-  def process(self, element, vgg):
+  def process(self, element, size):
     import vgg16bn
+    fname = element[0]
+    img = np.expand_dims(element[1], axis=0)
     "Loads pre-built VGG model up to last convolutional layer"""
     vgg = vgg16bn.Vgg16BN(include_top=False, size=size)
-    yield vgg.predict(np.expand_dims(element, axis=0)).array_str()
+    emb = vgg.predict(img)
+    yield json.dumps({
+      "file": fname,
+      "embedding": emb.tolist()
+    })
 
   
 def run(argv=None):
@@ -77,7 +108,8 @@ def run(argv=None):
       default=360,
       help='Target image Y size in pixels')
   known_args, pipeline_args = parser.parse_known_args(argv)
-  
+
+    
   with beam.Pipeline(argv=pipeline_args) as p:
     read_input_source = beam.io.ReadFromText(
       known_args.input_path, strip_trailing_newlines=True)
@@ -85,7 +117,8 @@ def run(argv=None):
          | 'Read input' >> read_input_source
          | 'Process images' >> beam.ParDo(ProcessImages(), size=(known_args.size_y,
                                                                  known_args.size_x))
-         | 'Compute features' >> beam.ParDo(ComputeFeatures(size=(known_args.size_y,
-                                                                  known_args.size_x)))
+         | 'Compute features' >> beam.ParDo(ComputeFeatures(), size=(known_args.size_y,
+                                                                     known_args.size_x))
          | 'save' >> beam.io.WriteToText(known_args.output_path)) 
-         #| 'save' >> SaveFeatures(known_args.output_path)) 
+         # | 'save' >> beam.io.avroio.WriteToAvro(known_args.output_path, schema)) 
+         # | 'save' >> SaveFeatures(known_args.output_path)) 
