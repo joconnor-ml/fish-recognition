@@ -66,7 +66,7 @@ class ProcessImages(beam.DoFn):
       return
 
     fname = uri.split("/")[-1]
-    yield fname, image.img_to_array(img), size_x, size_y
+    yield fname, image.img_to_array(img, 'th'), size_x, size_y
     #x = self.image_data_generator.random_transform(x)
     #x = self.image_data_generator.standardize(x)
 
