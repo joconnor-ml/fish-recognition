@@ -31,15 +31,18 @@ try:
 except ImportError:
   from apache_beam.utils.options import PipelineOptions
 
-from google.cloud.ml.io import SaveFeatures
+#from google.cloud.ml.io import SaveFeatures
 
        
 class ProcessImages(beam.DoFn):
   def process(self, element, size):
     from keras.preprocessing import image
-    x = image.img_to_array(image.load_img(element, target_size=size))
-    x = self.image_data_generator.random_transform(x)
-    x = self.image_data_generator.standardize(x)
+    import glob
+    for e in glob.glob("gs://fish_bucket/*"):
+      logging.warn(e)
+    x = image.img_to_array(image.load_img(str(element), target_size=size))
+    #x = self.image_data_generator.random_transform(x)
+    #x = self.image_data_generator.standardize(x)
 
     
 class ComputeFeatures(beam.DoFn):
@@ -47,7 +50,7 @@ class ComputeFeatures(beam.DoFn):
     import vgg16bn
     "Loads pre-built VGG model up to last convolutional layer"""
     vgg = vgg16bn.Vgg16BN(include_top=False, size=size)
-    yield vgg.predict(np.expand_dims(element, axis=0))
+    yield vgg.predict(np.expand_dims(element, axis=0)).array_str()
 
   
 def run(argv=None):
@@ -75,7 +78,7 @@ def run(argv=None):
       help='Target image Y size in pixels')
   known_args, pipeline_args = parser.parse_known_args(argv)
   
-  with beam.Pipeline(options=pipeline_args) as p:
+  with beam.Pipeline(argv=pipeline_args) as p:
     read_input_source = beam.io.ReadFromText(
       known_args.input_path, strip_trailing_newlines=True)
     _ = (p
@@ -84,5 +87,5 @@ def run(argv=None):
                                                                  known_args.size_x))
          | 'Compute features' >> beam.ParDo(ComputeFeatures(size=(known_args.size_y,
                                                                   known_args.size_x)))
-         #| 'save' >> beam.io.WriteToText('./test')) 
-         | 'save' >> SaveFeatures(known_args.output_path)) 
+         | 'save' >> beam.io.WriteToText(known_args.output_path)) 
+         #| 'save' >> SaveFeatures(known_args.output_path)) 
