@@ -66,14 +66,17 @@ class ProcessImages(beam.DoFn):
       return
 
     fname = uri.split("/")[-1]
-    yield fname, image.img_to_array(img, 'th'), size_x, size_y
+    yield fname, image.img_to_array(img, "th"), size_x, size_y
     #x = self.image_data_generator.random_transform(x)
     #x = self.image_data_generator.standardize(x)
 
     
 class ComputeFeatures(beam.DoFn):
   def process(self, element, size):
+    os.environ["KERAS_BACKEND"] = "theano"
     import vgg16bn
+    from keras import backend as K
+    K.set_image_dim_ordering('th')
     fname = element[0]
     img = np.expand_dims(element[1], axis=0)
     size_x = element[2]
