@@ -54,6 +54,7 @@ class ProcessImages(beam.DoFn):
       with _open_file_read_binary(uri) as f:
         image_bytes = f.read()
         img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+        size_x, size_y = img.size
         img = img.resize((size[1], size[0]))
                 
 
@@ -65,7 +66,7 @@ class ProcessImages(beam.DoFn):
       return
 
     fname = uri.split("/")[-1]
-    yield fname, image.img_to_array(img)
+    yield fname, image.img_to_array(img), size_x, size_y
     #x = self.image_data_generator.random_transform(x)
     #x = self.image_data_generator.standardize(x)
 
@@ -75,11 +76,15 @@ class ComputeFeatures(beam.DoFn):
     import vgg16bn
     fname = element[0]
     img = np.expand_dims(element[1], axis=0)
+    size_x = element[2]
+    size_y = element[3]
     "Loads pre-built VGG model up to last convolutional layer"""
     vgg = vgg16bn.Vgg16BN(include_top=False, size=size)
     emb = vgg.predict(img)
     yield json.dumps({
       "file": fname,
+      "size_x": size_x,
+      "size_y": size_y,
       "embedding": emb.tolist()
     })
 
