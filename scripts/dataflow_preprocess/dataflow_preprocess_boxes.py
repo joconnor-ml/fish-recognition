@@ -137,7 +137,7 @@ def run(argv=None):
     
   with beam.Pipeline(argv=pipeline_args) as p:
     read_input_source = beam.io.ReadFromText(
-      known_args.input_path, strip_trailing_newlines=True, min_bundle_size=64)
+      known_args.input_path, strip_trailing_newlines=True, min_bundle_size=64, skip_header_lines=1)
     _ = (p
          | 'Read input' >> read_input_source
          | 'Process images' >> beam.ParDo(ProcessImageBoxes(), size=(known_args.size_y,
