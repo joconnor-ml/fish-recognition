@@ -42,6 +42,10 @@ class ProcessImageBoxes(beam.DoFn):
   def process(self, element, size):
     from keras.preprocessing import image
     uri, height, width, x, y = element.split(",")
+    height = int(height)
+    width = int(width)
+    x = int(x)
+    y = int(y)
     if height == 0 and width == 0:  # no fish
       return
     # TF will enable 'rb' in future versions, but until then, 'r' is
@@ -56,7 +60,7 @@ class ProcessImageBoxes(beam.DoFn):
       with _open_file_read_binary(uri) as f:
         image_bytes = f.read()
         img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
-        img = img.crop(x, y, x + width, y + height)
+        img = img.crop((x, y, x + width, y + height))
         size_x, size_y = img.size
         img = img.resize((size[1], size[0]))
                 
@@ -133,7 +137,7 @@ def run(argv=None):
     
   with beam.Pipeline(argv=pipeline_args) as p:
     read_input_source = beam.io.ReadFromText(
-      known_args.input_path, strip_trailing_newlines=True, min_bundle_size=512)
+      known_args.input_path, strip_trailing_newlines=True, min_bundle_size=64)
     _ = (p
          | 'Read input' >> read_input_source
          | 'Process images' >> beam.ParDo(ProcessImageBoxes(), size=(known_args.size_y,
