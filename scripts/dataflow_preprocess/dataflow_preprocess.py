@@ -66,24 +66,34 @@ class ProcessImages(beam.DoFn):
       return
 
     fname = uri.split("/")[-1]
+    logging.warn("{} {} {} {}".format(fname, image.img_to_array(img, "th")[0], size_x, size_y))
     yield fname, image.img_to_array(img, "th"), size_x, size_y
     #x = self.image_data_generator.random_transform(x)
     #x = self.image_data_generator.standardize(x)
 
     
 class ComputeFeatures(beam.DoFn):
-  def process(self, element, size):
+  def __init__(self, size):
+    self.size = size
+    
+  def start_bundle(self, context=None):
     os.environ["KERAS_BACKEND"] = "theano"
     import vgg16bn
     from keras import backend as K
     K.set_image_dim_ordering('th')
+    self.vgg = vgg16bn.Vgg16BN(include_top=False, size=self.size)
+
+  def process(self, element):
     fname = element[0]
+    logging.warn(element[1].shape)
     img = np.expand_dims(element[1], axis=0)
     size_x = element[2]
     size_y = element[3]
     "Loads pre-built VGG model up to last convolutional layer"""
-    vgg = vgg16bn.Vgg16BN(include_top=False, size=size)
-    emb = vgg.predict(img)
+    try:
+      emb = self.vgg.predict(img)
+    except ValueError:
+      emb = []
     yield json.dumps({
       "file": fname,
       "size_x": size_x,
@@ -120,13 +130,13 @@ def run(argv=None):
     
   with beam.Pipeline(argv=pipeline_args) as p:
     read_input_source = beam.io.ReadFromText(
-      known_args.input_path, strip_trailing_newlines=True)
+      known_args.input_path, strip_trailing_newlines=True, min_bundle_size=512)
     _ = (p
          | 'Read input' >> read_input_source
          | 'Process images' >> beam.ParDo(ProcessImages(), size=(known_args.size_y,
                                                                  known_args.size_x))
-         | 'Compute features' >> beam.ParDo(ComputeFeatures(), size=(known_args.size_y,
-                                                                     known_args.size_x))
+         | 'Compute features' >> beam.ParDo(ComputeFeatures(size=(known_args.size_y,
+                                                                  known_args.size_x)))
          | 'save' >> beam.io.WriteToText(known_args.output_path)) 
          # | 'save' >> beam.io.avroio.WriteToAvro(known_args.output_path, schema)) 
          # | 'save' >> SaveFeatures(known_args.output_path)) 

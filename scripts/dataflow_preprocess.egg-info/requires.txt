@@ -1,2 +1,3 @@
 keras
 theano
+h5py
