@@ -91,7 +91,9 @@ class ComputeFeatures(beam.DoFn):
     import vgg16bn
     from keras import backend as K
     K.set_image_dim_ordering('th')
+    logging.warn("Loading VGG")
     self.vgg = vgg16bn.Vgg16BN(include_top=False, size=self.size)
+    logging.warn("Done loading VGG")
 
   def process(self, element):
     fname = element[0]
