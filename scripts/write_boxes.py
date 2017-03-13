@@ -17,7 +17,7 @@ def read_boxes():
             except:
                 box = {}
             box["class"] = element["class"]
-            box["filename"] = element["filename"].split("/")[-1]
+            box["filename"] = element["filename"].replace("../data/", "gs://fish_bucket/input/")
             boxes.append(box)
 
     return pd.DataFrame(boxes).set_index("filename").drop("class", axis=1)
