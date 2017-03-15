@@ -134,12 +134,12 @@ def run(argv=None):
   parser.add_argument(
       '--size_x',
       dest='size_x',
-      default=299,
+      default=224,
       help='Target image X size in pixels')
   parser.add_argument(
       '--size_y',
       dest='size_y',
-      default=299,
+      default=448,
       help='Target image Y size in pixels')
   known_args, pipeline_args = parser.parse_known_args(argv)
 
