@@ -5,10 +5,12 @@ import glob
 
 train_dir = "/home/alpha/fish/train/"
 
+fishes = ['ALB', 'BET', 'DOL', 'LAG', 'OTHER', 'SHARK', 'YFT']
 
 def read_boxes():
     boxes = []
-    for f in glob.glob("/home/alpha/annotations/*.json"):
+    for fish in fishes:
+        f = "/home/alpha/annotations/{}_labels.json".format(fish.lower())
         print(f)
         j = json.load(open(f))
         for element in j:
@@ -17,7 +19,7 @@ def read_boxes():
             except:
                 box = {}
             box["class"] = element["class"]
-            box["filename"] = element["filename"].replace("../data/", "gs://fish_bucket/input/")
+            box["filename"] = "gs://fish_bucket/input/train/{}/{}".format(fish, element["filename"].split("/")[-1])
             boxes.append(box)
 
     return pd.DataFrame(boxes).set_index("filename").drop("class", axis=1)

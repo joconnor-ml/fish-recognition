@@ -36,7 +36,6 @@ df = pd.read_csv("../data/train.bottleneck.{}.csv".format(architecture), index_c
 df["target"] = np.array([0] * alb + [1] * bet + [2] * dol + [3] * lag + [4] * nof + [5] * oth + [6] * sha + [7] * yft)
 boxes = utils.read_boxes()
 df = df.join(boxes).fillna(0)
-df.to_csv("../data/train.bottleneck.{}.targets.csv.gz", compression="gzip")
 print(df.head())
 
 y=df["target"].values
@@ -48,14 +47,24 @@ y = to_categorical(y)
 
 
 X_pca = PCA(3).fit_transform(X)
+kmeans = KMeans(3)
+clusters = kmeans.fit(X_pca).predict(X_pca)
+df["cluster3"] = clusters
+kmeans = KMeans(10)
+clusters = kmeans.fit(X_pca).predict(X_pca)
+df["cluster10"] = clusters
 kmeans = KMeans(100)
 clusters = kmeans.fit(X_pca).predict(X_pca)
+df["cluster100"] = clusters
 y_clust = to_categorical(clusters)
 print(y[0], y_box[0], y_clust[0])
 print(kmeans.score(X_pca))
 # print(clusters)
 
+df.to_csv("../data/train.bottleneck.{}.targets.csv.gz".format(architecture), compression="gzip")
+
 dftest = pd.read_csv("../data/test.bottleneck.{}.csv".format(architecture), index_col=0)
+
 dftest.head()
 
 def get_model():
@@ -101,8 +110,8 @@ print("Group KFold")
 for i, (train, test) in enumerate(cv.split(X, groups=clusters)):
     print(i)
     model = get_model()
-    model.fit(X[train, :], [y[train, :], y_box[train, :]], nb_epoch=20, validation_data=(X[test, :], [y[test, :], y_box[test, :]]), batch_size=128)
-    test_preds = model.predict(X[test])[0]
+    model.fit(X[train, :], [y[train, :], y_box[train, :]], nb_epoch=20, validation_data=(X[test, :], [y[test, :], y_box[test, :]]), batch_size=128, verbose=2)
+    test_preds = model.predict(X[test])[0].clip(0.1, 0.8)
     print(test_preds)
     ll = log_loss(y[test], test_preds)
     print(ll)
@@ -110,19 +119,19 @@ for i, (train, test) in enumerate(cv.split(X, groups=clusters)):
     pt.append(model.predict(dftest.values)[0])
     lls.append(ll)
 
-cv = StratifiedKFold(3)
-print("Stratified KFold")
-for i, (train, test) in enumerate(cv.split(X, y[:,0])):
-    print(i)
-    model = get_model()
-    model.fit(X[train, :], [y[train, :], y_box[train, :]], nb_epoch=20, validation_data=(X[test, :], [y[test, :], y_box[test, :]]), batch_size=128)
-    test_preds = model.predict(X[test])[0]
-    print(test_preds)
-    ll = log_loss(y[test], test_preds)
-    print(ll)
-    #p.append((y[test], model.predict(X[test])[:, -1]))
-    pt.append(model.predict(dftest.values)[0])
-    lls.append(ll)
+#cv = StratifiedKFold(10)
+#print("Stratified KFold")
+#for i, (train, test) in enumerate(cv.split(X, y[:,0])):
+#    print(i)
+#    model = get_model()
+#    model.fit(X[train, :], [y[train, :], y_box[train, :]], nb_epoch=20, validation_data=(X[test, :], [y[test, :], y_box[test, :]]), batch_size=128, verbose=2)
+#    test_preds = model.predict(X[test])[0].clip(0.025, 0.875)
+#    print(test_preds)
+#    ll = log_loss(y[test], test_preds)
+#    print(ll)
+#    #p.append((y[test], model.predict(X[test])[:, -1]))
+#    pt.append(model.predict(dftest.values)[0])
+#    lls.append(ll)
 
 
 print("Average")
@@ -131,7 +140,7 @@ print(sum(lls)/len(lls))
 folders = ['ALB', 'BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK', 'YFT']
 test = pd.DataFrame(sum(pt) / len(pt), index=dftest.index, columns=folders)
 test.index.name = "image"
-test.to_csv("sub.csv.gz", compression="gzip")
+test.clip(0.05, 0.85).to_csv("sub.csv.gz", compression="gzip")
 
 #model = Lasso(C=C).fit(X, y)
 #p = model.predict_proba(dftest.values)
