@@ -3,7 +3,7 @@ from setuptools import setup
 
 
 REQUIRED_PACKAGES = [
-    "keras",
+    "keras==1.2.2",
     "theano",
     "h5py",
 ]
