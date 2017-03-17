@@ -2,6 +2,8 @@ setup.py
 dataflow_preprocess/__init__.py
 dataflow_preprocess/dataflow_preprocess.py
 dataflow_preprocess/dataflow_preprocess_boxes.py
+dataflow_preprocess/dataflow_preprocess_crops.py
+dataflow_preprocess/dataflow_preprocess_train_crops.py
 dataflow_preprocess/dl_utils.py
 dataflow_preprocess/vgg16bn.py
 dataflow_preprocess.egg-info/PKG-INFO

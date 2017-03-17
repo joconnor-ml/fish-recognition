@@ -55,10 +55,10 @@ class ProcessImageBoxes(beam.DoFn):
         image_bytes = f.read()
         img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
         size_x, size_y = img.size
-        img1 = img.crop((0, 0, size_x // 2, size_y // 2)).resize((size[1], size[0]))  # bottom left
-        img2 = img.crop((size_x // 2, 0, size_x, size_y // 2)).resize((size[1], size[0]))  # bottom right
-        img3 = img.crop((0, size_y // 2, size_x // 2, size_y)).resize((size[1], size[0]))  # top left
-        img4 = img.crop((size_x // 2, size_y // 2, size_x, size_y)).resize((size[1], size[0]))  # top right
+        img1 = img.crop((5, 5, size_x // 2 + 5, size_y // 2 + 5)).resize((size[1], size[0]))  # bottom left
+        img2 = img.crop((size_x // 2 - 5, 5, size_x - 5, size_y // 2 + 5)).resize((size[1], size[0]))  # bottom right
+        img3 = img.crop((5, size_y // 2 - 5, size_x // 2 + 5, size_y - 5)).resize((size[1], size[0]))  # top left
+        img4 = img.crop((size_x // 2 - 5, size_y // 2 - 5, size_x - 5, size_y - 5)).resize((size[1], size[0]))  # top right
 
     # A variety of different calling libraries throw different exceptions here.
     # They all correspond to an unreadable file so we treat them equivalently.
@@ -111,10 +111,10 @@ class ComputeFeatures(beam.DoFn):
       "file": fname,
       "size_x": size_x,
       "size_y": size_y,
-      "embedding1": emb1.tolist()
-      "embedding2": emb2.tolist()
-      "embedding3": emb3.tolist()
-      "embedding4": emb4.tolist()
+      "embedding1": emb1.tolist(),
+      "embedding2": emb2.tolist(),
+      "embedding3": emb3.tolist(),
+      "embedding4": emb4.tolist(),
     })
 
   
