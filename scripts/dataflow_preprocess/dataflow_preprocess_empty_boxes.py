@@ -72,19 +72,19 @@ class ProcessImageBoxes(beam.DoFn):
       with _open_file_read_binary(uri) as f:
         image_bytes = f.read()
         img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+        size_x, size_y = img.size
         for i in range(12):
-          x2 = np.random.uniform(0,0.8)
-          y2 = np.random.uniform(0,0.8)
-          width2 = np.random.uniform(0.05,0.4)
-          height2 = np.random.uniform(0.05,0.4)
+          x2 = np.random.uniform(0,0.8) * size_x
+          y2 = np.random.uniform(0,0.8) * size_y
+          width2 = np.random.uniform(0.05,0.4) * size_x
+          height2 = np.random.uniform(0.05,0.4) * size_y
           overlapping = overlap(x, width, y, height, x2, width2, y2, height2)
-          contained = x2 + width2 < 1.0 and y2 + height2 < 1.0
+          contained = x2 + width2 < size_x and y2 + height2 < size_y
           if contained and not overlapping:
             break
           if i > 10: return
           
         img = img.crop((x2, y2, x2 + width2, y2 + height2))
-        size_x, size_y = img.size
         img = img.resize((size[1], size[0]))
                 
 
